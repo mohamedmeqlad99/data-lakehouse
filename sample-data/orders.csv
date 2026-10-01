@@ -1,0 +1,36 @@
+order_id,customer,region,product,amount,order_date
+1001,Amina Hassan,EMEA,Analytics Platform,1200.00,2026-01-05
+1002,Luis Romero,AMER,Storage Pack,450.50,2026-01-05
+1003,Priya Shah,APAC,Streaming Connector,890.00,2026-01-06
+1004,Chen Wei,APAC,Analytics Platform,1200.00,2026-01-06
+1005,Sofia Rossi,EMEA,Lakehouse Starter,2100.00,2026-01-07
+1006,Noah Williams,AMER,Storage Pack,450.50,2026-01-07
+1007,Yuki Tanaka,APAC,Streaming Connector,890.00,2026-01-08
+1008,Omar Farouk,EMEA,Analytics Platform,1200.00,2026-01-08
+1009,Elena Petrova,EMEA,Lakehouse Starter,2100.00,2026-01-09
+1010,James Okonkwo,AMER,Storage Pack,450.50,2026-01-09
+1011,Maya Cohen,EMEA,Streaming Connector,890.00,2026-01-10
+1012,Diego Alves,AMER,Analytics Platform,1200.00,2026-01-10
+1013,Hana Kim,APAC,Lakehouse Starter,2100.00,2026-01-11
+1014,Fatima Zahra,EMEA,Storage Pack,450.50,2026-01-11
+1015,Liam Murphy,AMER,Streaming Connector,890.00,2026-01-12
+1016,Ines Dubois,EMEA,Analytics Platform,1200.00,2026-01-12
+1017,Ravi Patel,APAC,Lakehouse Starter,2100.00,2026-01-13
+1018,Sara Ibrahim,EMEA,Storage Pack,450.50,2026-01-13
+1019,Tomás Silva,AMER,Streaming Connector,890.00,2026-01-14
+1020,Mei Lin,APAC,Analytics Platform,1200.00,2026-01-14
+1021,Amina Hassan,EMEA,Streaming Connector,890.00,2026-01-15
+1022,Luis Romero,AMER,Lakehouse Starter,2100.00,2026-01-15
+1023,Priya Shah,APAC,Storage Pack,450.50,2026-01-16
+1024,Chen Wei,APAC,Streaming Connector,890.00,2026-01-16
+1025,Sofia Rossi,EMEA,Analytics Platform,1200.00,2026-01-17
+1026,Noah Williams,AMER,Lakehouse Starter,2100.00,2026-01-17
+1027,Yuki Tanaka,APAC,Storage Pack,450.50,2026-01-18
+1028,Omar Farouk,EMEA,Streaming Connector,890.00,2026-01-18
+1029,Elena Petrova,EMEA,Analytics Platform,1200.00,2026-01-19
+1030,James Okonkwo,AMER,Storage Pack,450.50,2026-01-19
+1031,,AMER,Unknown Product,,2026-01-20
+1032,Maya Cohen,EMEA,Lakehouse Starter,2100.00,2026-01-20
+1033,Diego Alves,AMER,Analytics Platform,1200.00,2026-01-21
+1034,Hana Kim,APAC,Streaming Connector,890.00,2026-01-21
+1035,Fatima Zahra,EMEA,Lakehouse Starter,2100.00,2026-01-22
