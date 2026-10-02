@@ -1,22 +1,24 @@
 .PHONY: up down logs bootstrap query spark-sql ps
 
+COMPOSE_CMD := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
+
 up:
-	docker compose up -d
+	$(COMPOSE_CMD) up -d
 
 down:
-	docker compose down
+	$(COMPOSE_CMD) down
 
 logs:
-	docker compose logs -f --tail=100
+	$(COMPOSE_CMD) logs -f --tail=100
 
 ps:
-	docker compose ps
+	$(COMPOSE_CMD) ps
 
 bootstrap:
-	docker compose exec spark python /home/iceberg/jobs/bootstrap.py
+	$(COMPOSE_CMD) exec spark python /home/iceberg/jobs/bootstrap.py
 
 query:
-	docker compose exec trino trino --catalog iceberg --execute "SELECT region, ROUND(SUM(revenue), 2) AS revenue, SUM(order_count) AS orders FROM gold.daily_revenue GROUP BY region ORDER BY revenue DESC"
+	$(COMPOSE_CMD) exec trino trino --catalog iceberg --execute "SELECT region, ROUND(SUM(revenue), 2) AS revenue, SUM(order_count) AS orders FROM gold.daily_revenue GROUP BY region ORDER BY revenue DESC"
 
 spark-sql:
-	docker compose exec spark spark-sql --catalog demo
+	$(COMPOSE_CMD) exec spark spark-sql --catalog demo

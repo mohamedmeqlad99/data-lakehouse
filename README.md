@@ -36,17 +36,26 @@ docker compose up -d
 
 ## Start
 
+Use the Compose command available on your machine. The project supports both Docker Compose variants:
+
 ```bash
 cp .env.example .env   # optional; defaults already match compose
-docker compose up -d
+
+# Docker Compose v2
+ docker compose up -d
+
+# Legacy Compose binary
+ docker-compose up -d
 ```
 
-Wait until `docker compose ps` shows Spark and Trino running, then load the sample:
+Wait until `docker compose ps` or `docker-compose ps` shows Spark and Trino running, then load the sample:
 
 ```bash
 make bootstrap
 # or:
 docker compose exec spark python /home/iceberg/jobs/bootstrap.py
+# or:
+docker-compose exec spark python /home/iceberg/jobs/bootstrap.py
 ```
 
 ## Query
@@ -55,6 +64,8 @@ Trino on [http://localhost:8088](http://localhost:8088) (no auth). CLI:
 
 ```bash
 docker compose exec trino trino --catalog iceberg
+# or:
+docker-compose exec trino trino --catalog iceberg
 ```
 
 Then:
