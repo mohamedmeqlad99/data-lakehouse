@@ -227,6 +227,65 @@ def main() -> None:
         """
     )
 
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.data_quality_summary
+        USING iceberg
+        AS
+        WITH checks AS (
+          SELECT 'orders' AS dataset, 'missing_order_id' AS metric, COUNT(*) AS value
+          FROM bronze.orders_raw
+          WHERE order_id IS NULL
+
+          UNION ALL
+          SELECT 'orders', 'missing_customer', COUNT(*)
+          FROM bronze.orders_raw
+          WHERE customer IS NULL
+
+          UNION ALL
+          SELECT 'orders', 'missing_amount', COUNT(*)
+          FROM bronze.orders_raw
+          WHERE amount IS NULL
+
+          UNION ALL
+          SELECT 'orders', 'invalid_order_date', COUNT(*)
+          FROM bronze.orders_raw
+          WHERE order_date IS NULL
+
+          UNION ALL
+          SELECT 'customers', 'missing_email', COUNT(*)
+          FROM bronze.customers_raw
+          WHERE email IS NULL OR TRIM(email) = ''
+
+          UNION ALL
+          SELECT 'customers', 'duplicate_email', COUNT(*)
+          FROM (
+            SELECT LOWER(TRIM(email)) AS email
+            FROM bronze.customers_raw
+            WHERE email IS NOT NULL
+            GROUP BY LOWER(TRIM(email))
+            HAVING COUNT(*) > 1
+          )
+
+          UNION ALL
+          SELECT 'payments', 'missing_payment_status', COUNT(*)
+          FROM bronze.payments_raw
+          WHERE payment_status IS NULL OR TRIM(payment_status) = ''
+
+          UNION ALL
+          SELECT 'shipments', 'missing_delivery_status', COUNT(*)
+          FROM bronze.shipments_raw
+          WHERE delivery_status IS NULL OR TRIM(delivery_status) = ''
+        )
+        SELECT
+          dataset,
+          metric,
+          CAST(value AS BIGINT) AS issue_count,
+          CURRENT_DATE AS checked_on
+        FROM checks
+        """
+    )
+
     print("Lakehouse tables:")
     for row in spark.sql("SHOW TABLES IN bronze").collect():
         print(f"  bronze.{row.tableName}")
