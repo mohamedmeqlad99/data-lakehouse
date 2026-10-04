@@ -1,0 +1,21 @@
+customer_id,customer_name,email,city,country,signup_date,segment
+1,Amina Hassan,amina.hassan@lakehouse.io,Dubai,UAE,2025-01-12,enterprise
+2,Luis Romero,luis.romero@cloudflow.io,Bogota,Colombia,2025-02-03,growth
+3,Priya Shah,priya.shah@datawise.ai,Bengaluru,India,2025-02-18,enterprise
+4,Chen Wei,chen.wei@northwind.io,Shanghai,China,2025-03-06,growth
+5,Sofia Rossi,sofia.rossi@lakehouse-lab.it,Milan,Italy,2025-03-15,enterprise
+6,Noah Williams,noah.williams@bluepeak.io,Seattle,USA,2025-04-01,standard
+7,Yuki Tanaka,yuki.tanaka@nextwave.co,Tokyo,Japan,2025-04-20,growth
+8,Omar Farouk,omar.farouk@oasisdata.net,Cairo,Egypt,2025-05-11,enterprise
+9,Elena Petrova,elena.petrova@stormlake.io,Sofia,Bulgaria,2025-05-29,standard
+10,James Okonkwo,james.okonkwo@northstar.ai,Lagos,Nigeria,2025-06-10,growth
+11,Maya Cohen,maya.cohen@silverline.io,Tel Aviv,Israel,2025-06-24,enterprise
+12,Diego Alves,diego.alves@greenriver.com,Sao Paulo,Brazil,2025-07-02,standard
+13,Hana Kim,hana.kim@blueharbor.io,Seoul,South Korea,2025-07-17,growth
+14,Fatima Zahra,fatima.zahra@nomadflow.net,Rabat,Morocco,2025-08-01,enterprise
+15,Liam Murphy,liam.murphy@harborlogic.co,Dublin,Ireland,2025-08-20,standard
+16,Ines Dubois,ines.dubois@latticeio.fr,Paris,France,2025-09-03,enterprise
+17,Ravi Patel,ravi.patel@zenithdata.in,Hyderabad,India,2025-09-19,growth
+18,Sara Ibrahim,sara.ibrahim@copperpeak.io,Jeddah,Saudi Arabia,2025-10-01,enterprise
+19,Tomás Silva,tomas.silva@atlascloud.pt,Porto,Portugal,2025-10-11,standard
+20,Mei Lin,mei.lin@woodpecker.io,Singapore,Singapore,2025-10-22,growth
