@@ -24,6 +24,66 @@ def main() -> None:
         """
     )
 
+    customers = (
+        spark.read.option("header", True)
+        .option("inferSchema", True)
+        .csv("/home/iceberg/data/customers.csv")
+    )
+    customers.createOrReplaceTempView("customers_csv")
+
+    products = (
+        spark.read.option("header", True)
+        .option("inferSchema", True)
+        .csv("/home/iceberg/data/products.csv")
+    )
+    products.createOrReplaceTempView("products_csv")
+
+    payments = (
+        spark.read.option("header", True)
+        .option("inferSchema", True)
+        .csv("/home/iceberg/data/payments.csv")
+    )
+    payments.createOrReplaceTempView("payments_csv")
+
+    shipments = (
+        spark.read.option("header", True)
+        .option("inferSchema", True)
+        .csv("/home/iceberg/data/shipments.csv")
+    )
+    shipments.createOrReplaceTempView("shipments_csv")
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE bronze.customers_raw
+        USING iceberg
+        AS SELECT * FROM customers_csv
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE bronze.products_raw
+        USING iceberg
+        AS SELECT * FROM products_csv
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE bronze.payments_raw
+        USING iceberg
+        AS SELECT * FROM payments_csv
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE bronze.shipments_raw
+        USING iceberg
+        AS SELECT * FROM shipments_csv
+        """
+    )
+
     spark.sql(
         """
         CREATE OR REPLACE TABLE silver.orders
@@ -45,6 +105,79 @@ def main() -> None:
 
     spark.sql(
         """
+        CREATE OR REPLACE TABLE silver.customers
+        USING iceberg
+        AS
+        SELECT
+          CAST(customer_id AS BIGINT) AS customer_id,
+          TRIM(customer_name) AS customer_name,
+          LOWER(TRIM(email)) AS email,
+          TRIM(city) AS city,
+          TRIM(country) AS country,
+          CAST(signup_date AS DATE) AS signup_date,
+          TRIM(segment) AS segment
+        FROM bronze.customers_raw
+        WHERE customer_id IS NOT NULL
+          AND customer_name IS NOT NULL
+          AND email IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE silver.products
+        USING iceberg
+        AS
+        SELECT
+          CAST(product_id AS BIGINT) AS product_id,
+          TRIM(product_name) AS product_name,
+          TRIM(category) AS category,
+          CAST(unit_price AS DECIMAL(10, 2)) AS unit_price,
+          TRIM(region) AS region
+        FROM bronze.products_raw
+        WHERE product_id IS NOT NULL
+          AND product_name IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE silver.payments
+        USING iceberg
+        AS
+        SELECT
+          CAST(payment_id AS BIGINT) AS payment_id,
+          CAST(order_id AS BIGINT) AS order_id,
+          TRIM(payment_method) AS payment_method,
+          CAST(amount AS DECIMAL(10, 2)) AS amount,
+          TRIM(payment_status) AS payment_status,
+          CAST(payment_date AS DATE) AS payment_date
+        FROM bronze.payments_raw
+        WHERE payment_id IS NOT NULL
+          AND order_id IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE silver.shipments
+        USING iceberg
+        AS
+        SELECT
+          CAST(shipment_id AS BIGINT) AS shipment_id,
+          CAST(order_id AS BIGINT) AS order_id,
+          TRIM(carrier) AS carrier,
+          CAST(ship_date AS DATE) AS ship_date,
+          TRIM(delivery_status) AS delivery_status,
+          TRIM(region) AS region
+        FROM bronze.shipments_raw
+        WHERE shipment_id IS NOT NULL
+          AND order_id IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
         CREATE OR REPLACE TABLE gold.daily_revenue
         USING iceberg
         AS
@@ -55,6 +188,42 @@ def main() -> None:
           COUNT(*) AS order_count
         FROM silver.orders
         GROUP BY order_date, region
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.customer_order_summary
+        USING iceberg
+        AS
+        WITH payment_totals AS (
+          SELECT order_id, ROUND(SUM(amount), 2) AS total_paid
+          FROM silver.payments
+          GROUP BY order_id
+        ),
+        latest_shipment AS (
+          SELECT order_id, MAX(delivery_status) AS shipment_status
+          FROM silver.shipments
+          GROUP BY order_id
+        )
+        SELECT
+          c.customer_id,
+          c.customer_name,
+          c.country,
+          o.order_id,
+          o.order_date,
+          o.region,
+          o.product,
+          o.amount,
+          COALESCE(pt.total_paid, 0) AS total_paid,
+          COALESCE(ls.shipment_status, 'pending') AS shipment_status
+        FROM silver.orders o
+        LEFT JOIN silver.customers c
+          ON LOWER(TRIM(o.customer)) = LOWER(TRIM(c.customer_name))
+        LEFT JOIN payment_totals pt
+          ON pt.order_id = o.order_id
+        LEFT JOIN latest_shipment ls
+          ON ls.order_id = o.order_id
         """
     )
 
@@ -72,3 +241,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

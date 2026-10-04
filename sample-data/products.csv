@@ -1,0 +1,11 @@
+product_id,product_name,category,unit_price,region
+101,Analytics Platform,analytics,1200.00,EMEA
+102,Storage Pack,storage,450.50,AMER
+103,Streaming Connector,streaming,890.00,APAC
+104,Lakehouse Starter,platform,2100.00,EMEA
+105,Data Catalog,metadata,760.00,AMER
+106,Pipeline Monitor,observability,980.00,APAC
+107,Governance Bundle,security,1450.00,EMEA
+108,Cost Optimizer,analytics,640.00,AMER
+109,Realtime Dashboards,visualization,1180.00,APAC
+110,Warehouse Sync,integration,990.00,EMEA
