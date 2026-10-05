@@ -70,3 +70,42 @@ FROM gold.customer_order_summary
 GROUP BY customer_name, country
 ORDER BY total_order_value DESC
 LIMIT 10;
+
+SELECT
+  c.segment,
+  COUNT(DISTINCT c.customer_id) AS customers,
+  ROUND(SUM(o.amount), 2) AS total_revenue,
+  ROUND(AVG(o.amount), 2) AS avg_order_value
+FROM silver.customers c
+LEFT JOIN silver.orders o
+  ON LOWER(TRIM(o.customer)) = LOWER(TRIM(c.customer_name))
+GROUP BY c.segment
+ORDER BY total_revenue DESC;
+
+SELECT
+  product_name,
+  category,
+  COUNT(*) AS orders,
+  ROUND(SUM(amount), 2) AS revenue,
+  ROUND(AVG(amount), 2) AS avg_order_value
+FROM silver.orders
+GROUP BY product_name, category
+ORDER BY revenue DESC;
+
+SELECT
+  payment_method,
+  COUNT(*) AS payments,
+  ROUND(SUM(amount), 2) AS total_amount,
+  ROUND(AVG(amount), 2) AS avg_payment
+FROM silver.payments
+GROUP BY payment_method
+ORDER BY total_amount DESC;
+
+SELECT
+  region,
+  COUNT(*) AS shipments,
+  SUM(CASE WHEN delivery_status = 'delivered' THEN 1 ELSE 0 END) AS delivered,
+  SUM(CASE WHEN delivery_status = 'in_transit' THEN 1 ELSE 0 END) AS in_transit
+FROM silver.shipments
+GROUP BY region
+ORDER BY shipments DESC;
