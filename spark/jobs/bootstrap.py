@@ -193,6 +193,47 @@ def main() -> None:
 
     spark.sql(
         """
+        CREATE OR REPLACE TABLE gold.monthly_revenue
+        USING iceberg
+        AS
+        SELECT
+          CAST(DATE_TRUNC('MONTH', order_date) AS DATE) AS month_start,
+          region,
+          ROUND(SUM(amount), 2) AS revenue,
+          COUNT(*) AS order_count,
+          COUNT(DISTINCT customer) AS customer_count
+        FROM silver.orders
+        GROUP BY CAST(DATE_TRUNC('MONTH', order_date) AS DATE), region
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.product_performance
+        USING iceberg
+        AS
+        SELECT
+          p.product_id,
+          COALESCE(p.product_name, o.product) AS product_name,
+          COALESCE(p.category, 'unknown') AS category,
+          o.region,
+          ROUND(SUM(o.amount), 2) AS revenue,
+          COUNT(*) AS order_count,
+          COUNT(DISTINCT o.customer) AS customer_count,
+          ROUND(AVG(o.amount), 2) AS avg_order_value
+        FROM silver.orders o
+        LEFT JOIN silver.products p
+          ON LOWER(TRIM(o.product)) = LOWER(TRIM(p.product_name))
+        GROUP BY
+          p.product_id,
+          COALESCE(p.product_name, o.product),
+          COALESCE(p.category, 'unknown'),
+          o.region
+        """
+    )
+
+    spark.sql(
+        """
         CREATE OR REPLACE TABLE gold.customer_order_summary
         USING iceberg
         AS
