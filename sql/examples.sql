@@ -62,6 +62,26 @@ GROUP BY order_date
 ORDER BY order_date;
 
 SELECT
+  month_start,
+  region,
+  revenue,
+  order_count,
+  customer_count
+FROM gold.monthly_revenue
+ORDER BY month_start, region;
+
+SELECT
+  product_name,
+  category,
+  region,
+  revenue,
+  order_count,
+  customer_count,
+  avg_order_value
+FROM gold.product_performance
+ORDER BY revenue DESC;
+
+SELECT
   customer_name,
   country,
   SUM(amount) AS total_order_value,

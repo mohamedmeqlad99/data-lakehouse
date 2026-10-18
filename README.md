@@ -18,6 +18,8 @@ Medallion layers after bootstrap:
 | bronze | `bronze.orders_raw` | Raw CSV as ingested |
 | silver | `silver.orders` | Typed, nulls dropped |
 | gold | `gold.daily_revenue` | Revenue by day and region |
+| gold | `gold.monthly_revenue` | Revenue, orders, and customers by month and region |
+| gold | `gold.product_performance` | Product revenue and order metrics by region |
 
 ## Prerequisites
 
