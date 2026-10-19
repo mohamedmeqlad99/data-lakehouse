@@ -1,4 +1,4 @@
-.PHONY: up down logs bootstrap query spark-sql ps
+.PHONY: up down logs bootstrap query spark-sql ps dag-check
 
 COMPOSE_CMD := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
 
@@ -22,3 +22,6 @@ query:
 
 spark-sql:
 	$(COMPOSE_CMD) exec spark spark-sql --catalog demo
+
+dag-check:
+	python3 -c "from airflow.dags.lakehouse_daily_pipeline import build_dag; print(build_dag().task_ids)"

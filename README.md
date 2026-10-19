@@ -104,9 +104,32 @@ Credentials are **local-only** defaults. Do not reuse them outside this machine.
 docker-compose.yml
 spark/conf/spark-defaults.conf   # Iceberg REST + S3A
 spark/jobs/bootstrap.py          # bronze / silver / gold load
+airflow/dags/lakehouse_daily_pipeline.py  # scheduled orchestration definition
 sample-data/orders.csv
 trino/catalog/iceberg.properties
 sql/examples.sql
+```
+
+## Orchestration
+
+The project now includes an Airflow-style DAG definition for the daily lakehouse refresh workflow:
+
+```python
+from airflow.dags.lakehouse_daily_pipeline import build_dag
+
+dag = build_dag()
+```
+
+The DAG runs in this order:
+
+1. `bootstrap_lakehouse`
+2. `quality_check`
+3. `analytics_snapshot`
+
+You can validate the definition with:
+
+```bash
+make dag-check
 ```
 
 ## Stop
