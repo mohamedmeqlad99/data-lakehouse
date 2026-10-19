@@ -20,6 +20,8 @@ Medallion layers after bootstrap:
 | gold | `gold.daily_revenue` | Revenue by day and region |
 | gold | `gold.monthly_revenue` | Revenue, orders, and customers by month and region |
 | gold | `gold.product_performance` | Product revenue and order metrics by region |
+| gold | `gold.data_quality_summary` | Checks for missing or invalid records per dataset |
+| gold | `gold.pipeline_monitoring` | Data freshness and issue load per pipeline stage |
 
 ## Prerequisites
 

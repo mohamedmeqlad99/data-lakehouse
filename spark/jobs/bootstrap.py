@@ -327,6 +327,48 @@ def main() -> None:
         """
     )
 
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.pipeline_monitoring
+        USING iceberg
+        AS
+        WITH freshness AS (
+          SELECT 'orders' AS dataset, MAX(order_date) AS latest_record_date, COUNT(*) AS row_count
+          FROM silver.orders
+
+          UNION ALL
+          SELECT 'customers', MAX(signup_date), COUNT(*)
+          FROM silver.customers
+
+          UNION ALL
+          SELECT 'payments', MAX(payment_date), COUNT(*)
+          FROM silver.payments
+
+          UNION ALL
+          SELECT 'shipments', MAX(ship_date), COUNT(*)
+          FROM silver.shipments
+        ),
+        quality AS (
+          SELECT dataset, SUM(issue_count) AS open_issues
+          FROM gold.data_quality_summary
+          GROUP BY dataset
+        )
+        SELECT
+          f.dataset,
+          f.latest_record_date,
+          CAST(f.row_count AS BIGINT) AS row_count,
+          COALESCE(q.open_issues, 0) AS open_issues,
+          CASE
+            WHEN COALESCE(q.open_issues, 0) = 0 THEN 'healthy'
+            ELSE 'needs_attention'
+          END AS status,
+          CURRENT_DATE AS checked_on
+        FROM freshness f
+        LEFT JOIN quality q
+          ON q.dataset = f.dataset
+        """
+    )
+
     print("Lakehouse tables:")
     for row in spark.sql("SHOW TABLES IN bronze").collect():
         print(f"  bronze.{row.tableName}")

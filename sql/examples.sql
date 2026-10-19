@@ -8,6 +8,7 @@ SHOW TABLES FROM silver;
 SHOW TABLES FROM gold;
 
 SELECT * FROM gold.data_quality_summary ORDER BY dataset, metric;
+SELECT * FROM gold.pipeline_monitoring ORDER BY status, dataset;
 
 SELECT * FROM silver.orders ORDER BY order_date, order_id LIMIT 20;
 SELECT * FROM silver.customers ORDER BY customer_id LIMIT 20;
