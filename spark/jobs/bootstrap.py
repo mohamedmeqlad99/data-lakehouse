@@ -369,6 +369,40 @@ def main() -> None:
         """
     )
 
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.data_governance_summary
+        USING iceberg
+        AS
+        SELECT * FROM (
+          VALUES
+            ('bronze.orders_raw', 'orders', 'bronze', 'sales_ops', 'raw order feed', 'CSV source to bronze ingestion'),
+            ('bronze.customers_raw', 'customers', 'bronze', 'crm_team', 'customer feed', 'CSV source to bronze ingestion'),
+            ('bronze.products_raw', 'products', 'bronze', 'catalog_team', 'product feed', 'CSV source to bronze ingestion'),
+            ('bronze.payments_raw', 'payments', 'bronze', 'finance_ops', 'payment feed', 'CSV source to bronze ingestion'),
+            ('bronze.shipments_raw', 'shipments', 'bronze', 'ops_team', 'shipment feed', 'CSV source to bronze ingestion'),
+            ('silver.orders', 'orders', 'silver', 'sales_ops', 'cleaned orders', 'bronze to silver transformation'),
+            ('silver.customers', 'customers', 'silver', 'crm_team', 'cleaned customers', 'bronze to silver transformation'),
+            ('silver.products', 'products', 'silver', 'catalog_team', 'cleaned products', 'bronze to silver transformation'),
+            ('silver.payments', 'payments', 'silver', 'finance_ops', 'cleaned payments', 'bronze to silver transformation'),
+            ('silver.shipments', 'shipments', 'silver', 'ops_team', 'cleaned shipments', 'bronze to silver transformation'),
+            ('gold.daily_revenue', 'revenue', 'gold', 'analytics_team', 'daily revenue', 'silver aggregate for reporting'),
+            ('gold.monthly_revenue', 'revenue', 'gold', 'analytics_team', 'monthly revenue', 'silver aggregate for monthly reporting'),
+            ('gold.product_performance', 'products', 'gold', 'analytics_team', 'product performance', 'silver product metrics for analysis'),
+            ('gold.customer_order_summary', 'customers', 'gold', 'sales_ops', 'customer order view', 'joined customer and order data'),
+            ('gold.data_quality_summary', 'quality', 'gold', 'data_engineering', 'quality metrics', 'checks on bronze sources'),
+            ('gold.pipeline_monitoring', 'operations', 'gold', 'data_engineering', 'pipeline freshness', 'monitoring over silver and quality tables')
+        ) AS governance(
+          table_name,
+          dataset,
+          layer,
+          owner,
+          business_name,
+          lineage
+        )
+        """
+    )
+
     print("Lakehouse tables:")
     for row in spark.sql("SHOW TABLES IN bronze").collect():
         print(f"  bronze.{row.tableName}")

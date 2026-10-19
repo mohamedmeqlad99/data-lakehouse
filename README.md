@@ -22,6 +22,18 @@ Medallion layers after bootstrap:
 | gold | `gold.product_performance` | Product revenue and order metrics by region |
 | gold | `gold.data_quality_summary` | Checks for missing or invalid records per dataset |
 | gold | `gold.pipeline_monitoring` | Data freshness and issue load per pipeline stage |
+| gold | `gold.data_governance_summary` | Ownership, lineage, and business definition for each table |
+
+## Data governance and lineage
+
+The lakehouse now includes a simple governance view to make ownership and lineage explicit:
+
+- `gold.data_governance_summary` lists each table, dataset, layer, owner, business name, and lineage description.
+- Bronze tables are owned by the source team that provides the raw feed.
+- Silver tables are owned by the teams that define the cleaned business model.
+- Gold tables are owned by analytics or data engineering depending on the downstream use case.
+
+This creates a straightforward map from raw source feed to business-ready reporting.
 
 ## Prerequisites
 
