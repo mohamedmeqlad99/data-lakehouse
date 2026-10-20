@@ -1,0 +1,4 @@
+{"event_id":2026020105,"inventory_id":10001,"quantity_delta":12,"event_time":"2026-02-01 09:35:00","reason":"new_arrival"}
+{"event_id":2026020106,"inventory_id":10002,"quantity_delta":-8,"event_time":"2026-02-01 09:40:00","reason":"damaged_units"}
+{"event_id":2026020107,"inventory_id":10003,"quantity_delta":5,"event_time":"2026-02-01 09:45:00","reason":"restock"}
+{"event_id":2026020108,"inventory_id":10004,"quantity_delta":-10,"event_time":"2026-02-01 09:50:00","reason":"returns_processing"}

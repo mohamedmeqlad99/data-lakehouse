@@ -60,7 +60,10 @@ def main() -> None:
     inventory.createOrReplaceTempView("inventory_csv")
 
     inventory_adjustments = spark.read.json(
-      "/home/iceberg/data/inventory_adjustments.jsonl"
+      [
+        "/home/iceberg/data/inventory_adjustments.jsonl",
+        "/home/iceberg/data/inventory_adjustments_round2.jsonl",
+      ]
     )
     inventory_adjustments.createOrReplaceTempView("inventory_adjustments_json")
 
@@ -228,16 +231,30 @@ def main() -> None:
         CREATE OR REPLACE TABLE silver.inventory_adjustments
         USING iceberg
         AS
+        WITH latest_adjustments AS (
+          SELECT
+            CAST(event_id AS BIGINT) AS event_id,
+            CAST(inventory_id AS BIGINT) AS inventory_id,
+            CAST(quantity_delta AS BIGINT) AS quantity_delta,
+            CAST(event_time AS TIMESTAMP) AS event_time,
+            TRIM(reason) AS reason,
+            ROW_NUMBER() OVER (
+              PARTITION BY CAST(inventory_id AS BIGINT)
+              ORDER BY CAST(event_id AS BIGINT) DESC
+            ) AS rn
+          FROM bronze.inventory_adjustments_raw
+          WHERE event_id IS NOT NULL
+            AND inventory_id IS NOT NULL
+            AND quantity_delta IS NOT NULL
+        )
         SELECT
-          CAST(event_id AS BIGINT) AS event_id,
-          CAST(inventory_id AS BIGINT) AS inventory_id,
-          CAST(quantity_delta AS BIGINT) AS quantity_delta,
-          CAST(event_time AS TIMESTAMP) AS event_time,
-          TRIM(reason) AS reason
-        FROM bronze.inventory_adjustments_raw
-        WHERE event_id IS NOT NULL
-          AND inventory_id IS NOT NULL
-          AND quantity_delta IS NOT NULL
+          event_id,
+          inventory_id,
+          quantity_delta,
+          event_time,
+          reason
+        FROM latest_adjustments
+        WHERE rn = 1
         """
     )
 
