@@ -106,6 +106,22 @@ docker compose exec spark python /home/iceberg/jobs/bootstrap.py
 docker-compose exec spark python /home/iceberg/jobs/bootstrap.py
 ```
 
+## Dashboard
+
+A lightweight live dashboard is available in the project for viewing the current lakehouse state without opening the Trino CLI. Start it with:
+
+```bash
+make dashboard
+```
+
+Then open:
+
+```text
+http://localhost:8000
+```
+
+The dashboard shows the current schema count, table count, live inventory rows, revenue by region, and data quality issues from the real Iceberg catalog.
+
 ## Query
 
 Trino on [http://localhost:8088](http://localhost:8088) (no auth). CLI:

@@ -33,7 +33,7 @@ SELECT * FROM silver.shipments ORDER BY shipment_id LIMIT 20;
 SELECT
   segment,
   COUNT(*) AS customers,
-  ROUND(AVG(CAST(DATEDIFF(CURRENT_DATE, signup_date) AS DOUBLE)) / 30.0, 1) AS avg_days_since_signup
+  ROUND(AVG(CAST(DATE_DIFF('day', signup_date, CURRENT_DATE) AS DOUBLE)) / 30.0, 1) AS avg_days_since_signup
 FROM silver.customers
 GROUP BY segment
 ORDER BY customers DESC;
