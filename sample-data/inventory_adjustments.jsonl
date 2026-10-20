@@ -1,0 +1,4 @@
+{"event_id":2026020101,"inventory_id":10001,"quantity_delta":-8,"event_time":"2026-02-01 09:15:00","reason":"customer_fulfillment"}
+{"event_id":2026020102,"inventory_id":10002,"quantity_delta":15,"event_time":"2026-02-01 09:20:00","reason":"receiving"}
+{"event_id":2026020103,"inventory_id":10003,"quantity_delta":-2,"event_time":"2026-02-01 09:25:00","reason":"customer_fulfillment"}
+{"event_id":2026020104,"inventory_id":10004,"quantity_delta":25,"event_time":"2026-02-01 09:30:00","reason":"receiving"}

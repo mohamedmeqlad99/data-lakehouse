@@ -1,0 +1,5 @@
+inventory_id,product_id,warehouse,quantity,last_event_id,updated_at
+10001,101,EMEA,120,0,2026-02-01 08:00:00
+10002,102,AMER,35,0,2026-02-01 08:00:00
+10003,103,APAC,9,0,2026-02-01 08:00:00
+10004,104,EMEA,0,0,2026-02-01 08:00:00
