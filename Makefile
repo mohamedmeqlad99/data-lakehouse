@@ -1,4 +1,4 @@
-.PHONY: up down logs bootstrap query spark-sql ps dag-check
+.PHONY: up down logs bootstrap query spark-sql ps dag-check iceberg-history
 
 COMPOSE_CMD := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo "docker compose"; fi)
 
@@ -25,3 +25,6 @@ spark-sql:
 
 dag-check:
 	python3 -c "from airflow.dags.lakehouse_daily_pipeline import build_dag; print(build_dag().task_ids)"
+
+iceberg-history:
+	$(COMPOSE_CMD) exec trino trino --catalog iceberg --file /home/iceberg/sql/iceberg_operations.sql
