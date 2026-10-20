@@ -52,6 +52,18 @@ def main() -> None:
     )
     shipments.createOrReplaceTempView("shipments_csv")
 
+    inventory = (
+      spark.read.option("header", True)
+      .option("inferSchema", True)
+      .csv("/home/iceberg/data/inventory.csv")
+    )
+    inventory.createOrReplaceTempView("inventory_csv")
+
+    inventory_adjustments = spark.read.json(
+      "/home/iceberg/data/inventory_adjustments.jsonl"
+    )
+    inventory_adjustments.createOrReplaceTempView("inventory_adjustments_json")
+
     spark.sql(
         """
         CREATE OR REPLACE TABLE bronze.customers_raw
@@ -82,6 +94,22 @@ def main() -> None:
         USING iceberg
         AS SELECT * FROM shipments_csv
         """
+    )
+
+    spark.sql(
+      """
+      CREATE OR REPLACE TABLE bronze.inventory_raw
+      USING iceberg
+      AS SELECT * FROM inventory_csv
+      """
+    )
+
+    spark.sql(
+      """
+      CREATE OR REPLACE TABLE bronze.inventory_adjustments_raw
+      USING iceberg
+      AS SELECT * FROM inventory_adjustments_json
+      """
     )
 
     spark.sql(
@@ -178,6 +206,56 @@ def main() -> None:
 
     spark.sql(
         """
+        CREATE OR REPLACE TABLE silver.inventory
+        USING iceberg
+        AS
+        SELECT
+          CAST(inventory_id AS BIGINT) AS inventory_id,
+          CAST(product_id AS BIGINT) AS product_id,
+          TRIM(warehouse) AS warehouse,
+          CAST(quantity AS BIGINT) AS quantity,
+          CAST(last_event_id AS BIGINT) AS last_event_id,
+          CAST(updated_at AS TIMESTAMP) AS updated_at
+        FROM bronze.inventory_raw
+        WHERE inventory_id IS NOT NULL
+          AND product_id IS NOT NULL
+          AND quantity IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE silver.inventory_adjustments
+        USING iceberg
+        AS
+        SELECT
+          CAST(event_id AS BIGINT) AS event_id,
+          CAST(inventory_id AS BIGINT) AS inventory_id,
+          CAST(quantity_delta AS BIGINT) AS quantity_delta,
+          CAST(event_time AS TIMESTAMP) AS event_time,
+          TRIM(reason) AS reason
+        FROM bronze.inventory_adjustments_raw
+        WHERE event_id IS NOT NULL
+          AND inventory_id IS NOT NULL
+          AND quantity_delta IS NOT NULL
+        """
+    )
+
+    spark.sql(
+        """
+        MERGE INTO silver.inventory AS target
+        USING silver.inventory_adjustments AS source
+          ON target.inventory_id = source.inventory_id
+        WHEN MATCHED AND source.event_id > target.last_event_id THEN
+          UPDATE SET
+            quantity = target.quantity + source.quantity_delta,
+            last_event_id = source.event_id,
+            updated_at = source.event_time
+        """
+    )
+
+    spark.sql(
+        """
         CREATE OR REPLACE TABLE gold.daily_revenue
         USING iceberg
         AS
@@ -229,6 +307,30 @@ def main() -> None:
           COALESCE(p.product_name, o.product),
           COALESCE(p.category, 'unknown'),
           o.region
+        """
+    )
+
+    spark.sql(
+        """
+        CREATE OR REPLACE TABLE gold.inventory_availability
+        USING iceberg
+        AS
+        SELECT
+          i.inventory_id,
+          i.product_id,
+          p.product_name,
+          p.category,
+          i.warehouse,
+          i.quantity,
+          i.updated_at,
+          CASE
+            WHEN i.quantity <= 0 THEN 'out_of_stock'
+            WHEN i.quantity <= 10 THEN 'low_stock'
+            ELSE 'in_stock'
+          END AS stock_status
+        FROM silver.inventory i
+        LEFT JOIN silver.products p
+          ON p.product_id = i.product_id
         """
     )
 
@@ -317,6 +419,11 @@ def main() -> None:
           SELECT 'shipments', 'missing_delivery_status', COUNT(*)
           FROM bronze.shipments_raw
           WHERE delivery_status IS NULL OR TRIM(delivery_status) = ''
+
+          UNION ALL
+          SELECT 'inventory', 'negative_quantity', COUNT(*)
+          FROM silver.inventory
+          WHERE quantity < 0
         )
         SELECT
           dataset,
@@ -347,6 +454,10 @@ def main() -> None:
           UNION ALL
           SELECT 'shipments', MAX(ship_date), COUNT(*)
           FROM silver.shipments
+
+          UNION ALL
+          SELECT 'inventory', CAST(MAX(updated_at) AS DATE), COUNT(*)
+          FROM silver.inventory
         ),
         quality AS (
           SELECT dataset, SUM(issue_count) AS open_issues
@@ -381,17 +492,22 @@ def main() -> None:
             ('bronze.products_raw', 'products', 'bronze', 'catalog_team', 'product feed', 'CSV source to bronze ingestion'),
             ('bronze.payments_raw', 'payments', 'bronze', 'finance_ops', 'payment feed', 'CSV source to bronze ingestion'),
             ('bronze.shipments_raw', 'shipments', 'bronze', 'ops_team', 'shipment feed', 'CSV source to bronze ingestion'),
+            ('bronze.inventory_raw', 'inventory', 'bronze', 'warehouse_ops', 'opening inventory', 'CSV source to bronze ingestion'),
+            ('bronze.inventory_adjustments_raw', 'inventory', 'bronze', 'warehouse_ops', 'inventory adjustments', 'JSON Lines source to bronze ingestion'),
             ('silver.orders', 'orders', 'silver', 'sales_ops', 'cleaned orders', 'bronze to silver transformation'),
             ('silver.customers', 'customers', 'silver', 'crm_team', 'cleaned customers', 'bronze to silver transformation'),
             ('silver.products', 'products', 'silver', 'catalog_team', 'cleaned products', 'bronze to silver transformation'),
             ('silver.payments', 'payments', 'silver', 'finance_ops', 'cleaned payments', 'bronze to silver transformation'),
             ('silver.shipments', 'shipments', 'silver', 'ops_team', 'cleaned shipments', 'bronze to silver transformation'),
+            ('silver.inventory', 'inventory', 'silver', 'warehouse_ops', 'current inventory', 'CSV opening stock updated by JSON adjustment events'),
+            ('silver.inventory_adjustments', 'inventory', 'silver', 'warehouse_ops', 'cleaned inventory events', 'bronze JSON Lines to typed Iceberg table'),
             ('gold.daily_revenue', 'revenue', 'gold', 'analytics_team', 'daily revenue', 'silver aggregate for reporting'),
             ('gold.monthly_revenue', 'revenue', 'gold', 'analytics_team', 'monthly revenue', 'silver aggregate for monthly reporting'),
             ('gold.product_performance', 'products', 'gold', 'analytics_team', 'product performance', 'silver product metrics for analysis'),
             ('gold.customer_order_summary', 'customers', 'gold', 'sales_ops', 'customer order view', 'joined customer and order data'),
             ('gold.data_quality_summary', 'quality', 'gold', 'data_engineering', 'quality metrics', 'checks on bronze sources'),
-            ('gold.pipeline_monitoring', 'operations', 'gold', 'data_engineering', 'pipeline freshness', 'monitoring over silver and quality tables')
+            ('gold.pipeline_monitoring', 'operations', 'gold', 'data_engineering', 'pipeline freshness', 'monitoring over silver and quality tables'),
+            ('gold.inventory_availability', 'inventory', 'gold', 'warehouse_ops', 'inventory availability', 'silver inventory enriched with product details')
         ) AS governance(
           table_name,
           dataset,

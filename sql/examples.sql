@@ -10,6 +10,19 @@ SHOW TABLES FROM gold;
 SELECT * FROM gold.data_quality_summary ORDER BY dataset, metric;
 SELECT * FROM gold.pipeline_monitoring ORDER BY status, dataset;
 SELECT * FROM gold.data_governance_summary ORDER BY layer, table_name;
+SELECT * FROM silver.inventory_adjustments ORDER BY event_id;
+SELECT * FROM gold.inventory_availability ORDER BY warehouse, product_id;
+
+SELECT
+  committed_at,
+  snapshot_id,
+  parent_id,
+  operation
+FROM silver."inventory$snapshots"
+ORDER BY committed_at DESC;
+
+-- Replace the snapshot ID with the opening-stock snapshot to compare before MERGE.
+-- SELECT * FROM silver.inventory FOR VERSION AS OF 1234567890123456789;
 
 SELECT * FROM silver.orders ORDER BY order_date, order_id LIMIT 20;
 SELECT * FROM silver.customers ORDER BY customer_id LIMIT 20;

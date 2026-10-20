@@ -23,6 +23,7 @@ Medallion layers after bootstrap:
 | gold | `gold.data_quality_summary` | Checks for missing or invalid records per dataset |
 | gold | `gold.pipeline_monitoring` | Data freshness and issue load per pipeline stage |
 | gold | `gold.data_governance_summary` | Ownership, lineage, and business definition for each table |
+| gold | `gold.inventory_availability` | Current stock levels and availability by warehouse |
 
 ## Data governance and lineage
 
@@ -34,6 +35,37 @@ The lakehouse now includes a simple governance view to make ownership and lineag
 - Gold tables are owned by analytics or data engineering depending on the downstream use case.
 
 This creates a straightforward map from raw source feed to business-ready reporting.
+
+## Multiple formats and ACID writes
+
+The sample pipeline ingests CSV sources and JSON Lines inventory adjustment events, normalizes them into Iceberg tables, and stores the Iceberg data files as Parquet. This demonstrates how the same lakehouse can combine different source formats behind one table and query layer.
+
+During bootstrap, Spark applies the JSON adjustment events to `silver.inventory` with an Iceberg `MERGE`. The event ID guard makes rerunning the merge safe for the same event, and each successful merge is committed as a new Iceberg snapshot. Query current stock and inspect the snapshots in Trino:
+
+```sql
+SELECT * FROM gold.inventory_availability ORDER BY warehouse, product_id;
+
+SELECT committed_at, snapshot_id, parent_id, operation
+FROM silver."inventory$snapshots"
+ORDER BY committed_at DESC;
+```
+
+This demonstrates Iceberg ACID behavior:
+
+- **Atomicity:** the inventory merge is committed as one table snapshot, not as partially visible row writes.
+- **Consistency:** typed quantities and the event ID guard preserve the sample inventory update rules.
+- **Isolation:** readers see a consistent snapshot while a write is being committed.
+- **Durability:** committed table data and metadata are stored in MinIO and tracked by Iceberg.
+
+Use a snapshot ID from the history to inspect the opening stock before the merge:
+
+```sql
+SELECT *
+FROM silver.inventory FOR VERSION AS OF 1234567890123456789
+ORDER BY inventory_id;
+```
+
+The example data is in `sample-data/inventory.csv` and `sample-data/inventory_adjustments.jsonl`.
 
 ## Prerequisites
 
@@ -136,6 +168,8 @@ spark/conf/spark-defaults.conf   # Iceberg REST + S3A
 spark/jobs/bootstrap.py          # bronze / silver / gold load
 airflow/dags/lakehouse_daily_pipeline.py  # scheduled orchestration definition
 sample-data/orders.csv
+sample-data/inventory.csv
+sample-data/inventory_adjustments.jsonl
 trino/catalog/iceberg.properties
 sql/examples.sql
 ```
