@@ -97,6 +97,24 @@ One-shot:
 make query
 ```
 
+## Iceberg snapshots and time travel
+
+Inspect the recent snapshots, table history, and current data files for `gold.daily_revenue`:
+
+```bash
+make iceberg-history
+```
+
+To query a prior version, copy a `snapshot_id` from the snapshots output and use it in Trino:
+
+```sql
+SELECT *
+FROM gold.daily_revenue FOR VERSION AS OF 1234567890123456789
+ORDER BY order_date, region;
+```
+
+The example SQL is in `sql/iceberg_operations.sql`. The version query is commented out there until you replace the sample ID with a real snapshot ID. These examples are read-only; snapshot rollback and expiration are intentionally left as explicit operator actions.
+
 Spark SQL:
 
 ```bash
