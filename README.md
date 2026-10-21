@@ -40,7 +40,7 @@ This creates a straightforward map from raw source feed to business-ready report
 
 The sample pipeline ingests CSV sources and JSON Lines inventory adjustment events, normalizes them into Iceberg tables, and stores the Iceberg data files as Parquet. This demonstrates how the same lakehouse can combine different source formats behind one table and query layer.
 
-During bootstrap, Spark applies the JSON adjustment events to `silver.inventory` with an Iceberg `MERGE`. The event ID guard makes rerunning the merge safe for the same event, and each successful merge is committed as a new Iceberg snapshot. Query current stock and inspect the snapshots in Trino:
+During bootstrap, Spark keeps every JSON adjustment event in `silver.inventory_adjustments`, aggregates all pending deltas by inventory item, and applies one row per item with an Iceberg `MERGE`. The maximum event ID acts as a replay watermark, and the bootstrap rebuilds from opening stock before applying the complete event ledger so repeated runs produce the same final inventory. Each successful merge is committed as a new Iceberg snapshot. Query current stock and inspect the snapshots in Trino:
 
 ```sql
 SELECT * FROM gold.inventory_availability ORDER BY warehouse, product_id;
@@ -49,6 +49,8 @@ SELECT committed_at, snapshot_id, parent_id, operation
 FROM silver."inventory$snapshots"
 ORDER BY committed_at DESC;
 ```
+
+The two JSON Lines batches are `sample-data/inventory_adjustments.jsonl` and `sample-data/inventory_adjustments_round2.jsonl`. After bootstrap, the expected quantities are `10001: 124`, `10002: 42`, `10003: 12`, and `10004: 15`. The reconciliation query in `sql/examples.sql` compares opening stock plus all event deltas with the current Silver quantity; each row should report `match`.
 
 This demonstrates Iceberg ACID behavior:
 
@@ -65,7 +67,7 @@ FROM silver.inventory FOR VERSION AS OF 1234567890123456789
 ORDER BY inventory_id;
 ```
 
-The example data is in `sample-data/inventory.csv` and `sample-data/inventory_adjustments.jsonl`.
+The example data is in `sample-data/inventory.csv` and both inventory adjustment JSON Lines files.
 
 ## Prerequisites
 

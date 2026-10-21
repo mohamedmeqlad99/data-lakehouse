@@ -14,6 +14,25 @@ SELECT * FROM silver.inventory_adjustments ORDER BY event_id;
 SELECT * FROM gold.inventory_availability ORDER BY warehouse, product_id;
 
 SELECT
+  i.inventory_id,
+  p.product_name,
+  CAST(b.quantity AS BIGINT) + SUM(a.quantity_delta) AS expected_quantity,
+  i.quantity AS current_quantity,
+  CASE
+    WHEN CAST(b.quantity AS BIGINT) + SUM(a.quantity_delta) = i.quantity THEN 'match'
+    ELSE 'mismatch'
+  END AS replay_check
+FROM silver.inventory i
+JOIN bronze.inventory_raw b
+  ON b.inventory_id = i.inventory_id
+JOIN silver.inventory_adjustments a
+  ON a.inventory_id = i.inventory_id
+LEFT JOIN silver.products p
+  ON p.product_id = i.product_id
+GROUP BY i.inventory_id, p.product_name, b.quantity, i.quantity
+ORDER BY i.inventory_id;
+
+SELECT
   committed_at,
   snapshot_id,
   parent_id,
@@ -118,13 +137,15 @@ GROUP BY c.segment
 ORDER BY total_revenue DESC;
 
 SELECT
-  product_name,
-  category,
+  COALESCE(p.product_name, o.product) AS product_name,
+  COALESCE(p.category, 'unknown') AS category,
   COUNT(*) AS orders,
-  ROUND(SUM(amount), 2) AS revenue,
-  ROUND(AVG(amount), 2) AS avg_order_value
-FROM silver.orders
-GROUP BY product_name, category
+  ROUND(SUM(o.amount), 2) AS revenue,
+  ROUND(AVG(o.amount), 2) AS avg_order_value
+FROM silver.orders o
+LEFT JOIN silver.products p
+  ON LOWER(TRIM(o.product)) = LOWER(TRIM(p.product_name))
+GROUP BY COALESCE(p.product_name, o.product), COALESCE(p.category, 'unknown')
 ORDER BY revenue DESC;
 
 SELECT
