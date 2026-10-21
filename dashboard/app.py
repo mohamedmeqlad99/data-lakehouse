@@ -89,8 +89,12 @@ def load_dashboard_data() -> dict:
         "schemas": run_trino("SHOW SCHEMAS"),
         "silver_tables": run_trino("SHOW TABLES FROM silver"),
         "inventory": run_trino(
-            "SELECT inventory_id, product_id, warehouse, quantity, last_event_id, updated_at "
-            "FROM silver.inventory ORDER BY warehouse, inventory_id"
+            "SELECT p.product_name, i.warehouse, i.quantity, "
+            "CASE WHEN i.quantity < 0 THEN 'negative stock' "
+            "WHEN i.quantity = 0 THEN 'out of stock' "
+            "WHEN i.quantity <= 10 THEN 'low stock' ELSE 'in stock' END AS availability "
+            "FROM silver.inventory i LEFT JOIN silver.products p ON p.product_id = i.product_id "
+            "ORDER BY i.warehouse, p.product_name"
         ),
         "revenue": run_trino(
             "SELECT region, ROUND(SUM(revenue), 2) AS revenue, SUM(order_count) AS orders "
@@ -165,10 +169,10 @@ low_stock = int((inventory["quantity"] <= 10).sum()) if not inventory.empty else
 kpis = st.columns(4)
 kpis[0].metric("Revenue", f"${total_revenue / 1000:.1f}k", help=f"${total_revenue:,.2f} summed across the Gold daily revenue mart.")
 kpis[1].metric("Orders", f"{order_count:,}", help="Orders represented in the Gold daily revenue mart.")
-kpis[2].metric("Low stock", f"{low_stock:,}", help="Inventory rows at or below 10 units.")
+kpis[2].metric("Restock alerts", f"{low_stock:,}", help="Inventory rows at or below 10 units, including negative stock.")
 kpis[3].metric("Quality issues", f"{quality_issues:,}", help="Sum of issue counts from the Gold quality summary.")
 
-left, right = st.columns([1, 1], gap="large")
+left, right = st.columns([1.2, 0.8], gap="large")
 with left:
     st.markdown('<div class="section-head"><h2>Inventory position</h2></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-note">Latest committed quantities by warehouse and product.</div>', unsafe_allow_html=True)
@@ -177,19 +181,22 @@ with left:
     else:
         display_inventory = inventory.rename(
             columns={
-                "inventory_id": "Inventory ID",
-                "product_id": "Product ID",
+                "product_name": "Product",
                 "warehouse": "Warehouse",
                 "quantity": "Quantity",
-                "last_event_id": "Last Event",
-                "updated_at": "Updated At",
+                "availability": "Availability",
             }
         )
         st.dataframe(
             display_inventory,
             width="stretch",
             hide_index=True,
-            column_config={"Quantity": st.column_config.NumberColumn(format="%d units")},
+            column_config={
+                "Product": st.column_config.TextColumn(width="medium"),
+                "Warehouse": st.column_config.TextColumn(width="small"),
+                "Quantity": st.column_config.NumberColumn(format="%d", width="small"),
+                "Availability": st.column_config.TextColumn(width="small"),
+            },
         )
 
 with right:
