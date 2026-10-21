@@ -111,6 +111,22 @@ services:
     networks:
       - lakehouse
 
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: lakehouse-dashboard
+    depends_on:
+      trino:
+        condition: service_started
+    environment:
+      TRINO_HOST: trino
+      TRINO_PORT: 8080
+      TRINO_USER: lakehouse-dashboard
+    ports:
+      - "8501:8501"
+    networks:
+      - lakehouse
+
 volumes:
   minio-data:
 

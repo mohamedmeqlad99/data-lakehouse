@@ -30,4 +30,4 @@ iceberg-history:
 	$(COMPOSE_CMD) exec trino trino --catalog iceberg --file /home/iceberg/sql/iceberg_operations.sql
 
 dashboard:
-	python3 dashboard/app.py
+	$(COMPOSE_CMD) up -d dashboard
