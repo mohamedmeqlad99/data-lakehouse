@@ -108,7 +108,7 @@ docker-compose exec spark python /home/iceberg/jobs/bootstrap.py
 
 ## Dashboard
 
-A lightweight live dashboard is available in the project for viewing the current lakehouse state without opening the Trino CLI. Start it with:
+A Streamlit dashboard is available for viewing live lakehouse metrics. Start the dashboard container with:
 
 ```bash
 make dashboard
@@ -117,10 +117,10 @@ make dashboard
 Then open:
 
 ```text
-http://localhost:8000
+http://localhost:8501
 ```
 
-The dashboard shows the current schema count, table count, live inventory rows, revenue by region, and data quality issues from the real Iceberg catalog.
+The dashboard reads directly from Trino over the Compose network and shows revenue and order KPIs, inventory by warehouse, data quality issues, and recent Iceberg inventory snapshots. Use **Refresh live data** to bypass the 15-second cache. Streamlit and the Trino Python client are installed in the dashboard image.
 
 ## Query
 
