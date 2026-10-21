@@ -231,37 +231,31 @@ def main() -> None:
         CREATE OR REPLACE TABLE silver.inventory_adjustments
         USING iceberg
         AS
-        WITH latest_adjustments AS (
-          SELECT
-            CAST(event_id AS BIGINT) AS event_id,
-            CAST(inventory_id AS BIGINT) AS inventory_id,
-            CAST(quantity_delta AS BIGINT) AS quantity_delta,
-            CAST(event_time AS TIMESTAMP) AS event_time,
-            TRIM(reason) AS reason,
-            ROW_NUMBER() OVER (
-              PARTITION BY CAST(inventory_id AS BIGINT)
-              ORDER BY CAST(event_id AS BIGINT) DESC
-            ) AS rn
-          FROM bronze.inventory_adjustments_raw
-          WHERE event_id IS NOT NULL
-            AND inventory_id IS NOT NULL
-            AND quantity_delta IS NOT NULL
-        )
         SELECT
-          event_id,
-          inventory_id,
-          quantity_delta,
-          event_time,
-          reason
-        FROM latest_adjustments
-        WHERE rn = 1
+          CAST(event_id AS BIGINT) AS event_id,
+          CAST(inventory_id AS BIGINT) AS inventory_id,
+          CAST(quantity_delta AS BIGINT) AS quantity_delta,
+          CAST(event_time AS TIMESTAMP) AS event_time,
+          TRIM(reason) AS reason
+        FROM bronze.inventory_adjustments_raw
+        WHERE event_id IS NOT NULL
+          AND inventory_id IS NOT NULL
+          AND quantity_delta IS NOT NULL
         """
     )
 
     spark.sql(
         """
         MERGE INTO silver.inventory AS target
-        USING silver.inventory_adjustments AS source
+        USING (
+          SELECT
+            inventory_id,
+            SUM(quantity_delta) AS quantity_delta,
+            MAX(event_id) AS event_id,
+            MAX_BY(event_time, event_id) AS event_time
+          FROM silver.inventory_adjustments
+          GROUP BY inventory_id
+        ) AS source
           ON target.inventory_id = source.inventory_id
         WHEN MATCHED AND source.event_id > target.last_event_id THEN
           UPDATE SET
